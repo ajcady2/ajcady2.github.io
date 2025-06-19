@@ -30,32 +30,35 @@ export const Terminal = () => {
     <div className="min-h-screen relative scanlines">
       <TerminalHeader />
       
-      <div className="h-screen flex flex-col p-4 space-y-4">
-        <ASCIIArt />
+      <div className="min-h-screen flex flex-col p-4">
+        <div className="flex-shrink-0">
+          <ASCIIArt />
+          <BootSequence isVisible={state.isBooting} />
+        </div>
         
-        <BootSequence isVisible={state.isBooting} />
-        
-        <TerminalOutput 
-          ref={outputRef}
-          commandHistory={state.commandHistory}
-        />
-        
-        <div className="space-y-2">
-          <TerminalInput
-            ref={inputRef}
-            value={state.currentInput}
-            onChange={updateInput}
-            onExecuteCommand={executeCommand}
-            onNavigateHistory={navigateHistory}
-            onShowSuggestions={showSuggestions}
-            onHideSuggestions={hideSuggestions}
+        <div className="flex-1 flex flex-col min-h-0">
+          <TerminalOutput 
+            ref={outputRef}
+            commandHistory={state.commandHistory}
           />
           
-          <CommandSuggestions
-            input={state.currentInput}
-            isVisible={state.showSuggestions}
-            onSelectCommand={handleSelectCommand}
-          />
+          <div className="flex-shrink-0 mt-4 space-y-2">
+            <TerminalInput
+              ref={inputRef}
+              value={state.currentInput}
+              onChange={updateInput}
+              onExecuteCommand={executeCommand}
+              onNavigateHistory={navigateHistory}
+              onShowSuggestions={showSuggestions}
+              onHideSuggestions={hideSuggestions}
+            />
+            
+            <CommandSuggestions
+              input={state.currentInput}
+              isVisible={state.showSuggestions}
+              onSelectCommand={handleSelectCommand}
+            />
+          </div>
         </div>
       </div>
       
