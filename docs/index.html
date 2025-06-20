@@ -55,6 +55,23 @@
                 rgba(0, 255, 255, 0.03) 4px
             );
             pointer-events: none;
+            z-index: 2;
+        }
+
+        /* Ambient animated noise overlay */
+        .ambient-noise {
+            pointer-events: none;
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            opacity: 0.08;
+            z-index: 3;
+            background: url('https://upload.wikimedia.org/wikipedia/commons/2/2d/White_noise_static.gif');
+            mix-blend-mode: lighten;
+            animation: ambient-move 8s linear infinite alternate;
+        }
+        @keyframes ambient-move {
+            0% { background-position: 0 0; }
+            100% { background-position: 100px 100px; }
         }
 
         /* Terminal header */
@@ -320,9 +337,26 @@
             0% { text-shadow: 0 0 2px #ff3333, 0 0 6px #ff3333; }
             100% { text-shadow: 0 0 8px #ff3333, 0 0 16px #ff3333; }
         }
+
+        /* Add style for selected suggestion */
+        .suggestion.selected { background: rgba(0,255,255,0.2); opacity: 1; border: 1px solid var(--neon-cyan); }
+
+        /* Terminal shake animation */
+        .terminal-shake {
+            animation: terminal-shake 0.4s cubic-bezier(.36,.07,.19,.97) both;
+        }
+        @keyframes terminal-shake {
+            10%, 90% { transform: translate3d(-1px, 0, 0); }
+            20%, 80% { transform: translate3d(2px, 0, 0); }
+            30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+            40%, 60% { transform: translate3d(4px, 0, 0); }
+            100% { transform: none; }
+        }
     </style>
 </head>
 <body>
+    <!-- Ambient noise overlay -->
+    <div class="ambient-noise"></div>
     <div class="terminal-container scanlines">
         <!-- Terminal Header -->
         <div class="terminal-header">
@@ -359,6 +393,7 @@
 ╔══════════════════════════════════════════════════════════════╗
 ║  MY PORTFOLIO SYSTEM - READY FOR INPUT                       ║
 ║  Type 'help' to view available commands                      ║
+║  Press 'Tab' to autocomplete commands                        ║
 ╚══════════════════════════════════════════════════════════════╝
                     </pre>
                 </div>
@@ -376,6 +411,10 @@
             <div class="suggestions" id="suggestions" style="display: none;"></div>
         </div>
     </div>
+
+    <!-- Terminal hum and beep sounds -->
+    <audio id="terminal-hum" src="https://cdn.pixabay.com/audio/2022/07/26/audio_124bfae3e2.mp3" loop preload="auto"></audio>
+    <audio id="terminal-beep" src="https://cdn.pixabay.com/audio/2022/03/15/audio_115b9b7b4b.mp3" preload="auto"></audio>
 
     <script>
         // Terminal functionality
@@ -645,6 +684,8 @@
                     }
                 };
                 
+                this.suggestionList = [];
+                this.suggestionIndex = -1;
                 this.init();
             }
             
@@ -659,6 +700,13 @@
                 this.input.focus();
                 document.addEventListener('click', () => this.input.focus());
                 
+                // Play terminal hum on open
+                const hum = document.getElementById('terminal-hum');
+                if (hum) {
+                    hum.volume = 0.18;
+                    hum.play().catch(()=>{});
+                }
+
                 this.startBootSequence();
             }
             
@@ -704,7 +752,13 @@
                 switch (e.key) {
                     case 'Enter':
                         e.preventDefault();
-                        this.executeCommand();
+                        // If suggestions are visible and a suggestion is selected, autocomplete
+                        if (this.suggestions.style.display === 'flex' && this.suggestionList.length > 0 && this.suggestionIndex >= 0) {
+                            this.input.value = this.suggestionList[this.suggestionIndex];
+                            this.hideSuggestions();
+                        } else {
+                            this.executeCommand();
+                        }
                         break;
                     case 'ArrowUp':
                         e.preventDefault();
@@ -716,7 +770,7 @@
                         break;
                     case 'Tab':
                         e.preventDefault();
-                        this.showSuggestions();
+                        this.handleTabAutocomplete();
                         break;
                     case 'Escape':
                         this.hideSuggestions();
@@ -737,6 +791,10 @@
                 const commandLine = this.input.value.trim();
                 if (!commandLine) return;
                 
+                // Play beep sound
+                const beep = document.getElementById('terminal-beep');
+                if (beep) { beep.currentTime = 0; beep.volume = 0.25; beep.play().catch(()=>{}); }
+
                 this.addToHistory(commandLine);
                 this.hideSuggestions();
                 
@@ -756,6 +814,10 @@
                             this.displayCommand(commandLine, result);
                             this.input.value = '';
                             this.scrollToBottom();
+                            // Shake for vault or geomap
+                            if (cmdName.toLowerCase() === 'vault' || cmdName.toLowerCase() === 'geomap') {
+                                this.shakeTerminal();
+                            }
                         });
                         this.input.value = '';
                         return;
@@ -772,6 +834,10 @@
                 this.displayCommand(commandLine, output);
                 this.input.value = '';
                 this.scrollToBottom();
+                // Shake for vault or geomap
+                if (cmdName.toLowerCase() === 'vault' || cmdName.toLowerCase() === 'geomap') {
+                    this.shakeTerminal();
+                }
             }
             
             addToHistory(command) {
@@ -810,10 +876,11 @@
                 const matchingCommands = Object.keys(this.commands).filter(cmd => 
                     cmd.startsWith(input)
                 );
-                
+                this.suggestionList = matchingCommands;
+                this.suggestionIndex = matchingCommands.length > 0 ? 0 : -1;
                 if (matchingCommands.length > 0) {
-                    this.suggestions.innerHTML = matchingCommands.map(cmd => 
-                        `<div class="suggestion" onclick="terminal.selectSuggestion('${cmd}')">${cmd}</div>`
+                    this.suggestions.innerHTML = matchingCommands.map((cmd, idx) => 
+                        `<div class="suggestion${idx === this.suggestionIndex ? ' selected' : ''}" onclick="terminal.selectSuggestion('${cmd}')">${cmd}</div>`
                     ).join('');
                     this.suggestions.style.display = 'flex';
                 } else {
@@ -821,8 +888,30 @@
                 }
             }
             
+            handleTabAutocomplete() {
+                const input = this.input.value.toLowerCase();
+                if (this.suggestionList.length === 0) {
+                    this.showSuggestions();
+                    return;
+                }
+                if (this.suggestionList.length === 1) {
+                    this.input.value = this.suggestionList[0];
+                    this.hideSuggestions();
+                    return;
+                }
+                // Cycle through suggestions
+                this.suggestionIndex = (this.suggestionIndex + 1) % this.suggestionList.length;
+                this.input.value = this.suggestionList[this.suggestionIndex];
+                // Update suggestions UI
+                this.suggestions.innerHTML = this.suggestionList.map((cmd, idx) =>
+                    `<div class="suggestion${idx === this.suggestionIndex ? ' selected' : ''}" onclick="terminal.selectSuggestion('${cmd}')">${cmd}</div>`
+                ).join('');
+            }
+            
             hideSuggestions() {
                 this.suggestions.style.display = 'none';
+                this.suggestionList = [];
+                this.suggestionIndex = -1;
             }
             
             selectSuggestion(command) {
@@ -833,6 +922,16 @@
             
             scrollToBottom() {
                 this.output.scrollTop = this.output.scrollHeight;
+            }
+
+            shakeTerminal() {
+                const container = document.querySelector('.terminal-container');
+                if (!container) return;
+                container.classList.remove('terminal-shake');
+                // Force reflow
+                void container.offsetWidth;
+                container.classList.add('terminal-shake');
+                setTimeout(() => container.classList.remove('terminal-shake'), 500);
             }
         }
         
