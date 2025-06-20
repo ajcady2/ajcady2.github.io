@@ -61,7 +61,11 @@
   }
 
   body {
-    @apply font-mono antialiased bg-terminal-bg text-neon-cyan overflow-hidden;
+    /* Use CSS variables directly for background and text color */
+    background-color: var(--terminal-bg);
+    color: var(--neon-cyan);
+    @apply font-mono antialiased; /* Only use Tailwind utilities that exist at build time */
+    /* Removed overflow-hidden to allow scrolling if needed */
     font-family: 'JetBrains Mono', 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Code', 'Droid Sans Mono', monospace;
   }
 }
@@ -187,3 +191,9 @@
 .command-suggestion:hover {
   opacity: 1;
 }
+
+/*
+  Dark mode strategy:
+  - If you use Tailwind's dark mode, ensure your root element (html or body) has the 'dark' class when dark mode is active.
+  - The .dark selector below will only apply if you toggle the class in your app.
+*/
