@@ -1,9 +1,7 @@
-name: Deploy to GitHub Pages
+name: Build and Deploy to Docs
 
 on:
   push:
-    branches: [ main ]
-  pull_request:
     branches: [ main ]
 
 jobs:
@@ -23,12 +21,18 @@ jobs:
     - name: Install dependencies
       run: npm ci
       
-    - name: Build
+    - name: Build project
       run: npm run build
       
-    - name: Deploy to GitHub Pages
-      uses: peaceiris/actions-gh-pages@v3
-      if: github.ref == 'refs/heads/main'
-      with:
-        github_token: ${{ secrets.GITHUB_TOKEN }}
-        publish_dir: ./dist/public
+    - name: Copy assets to docs
+      run: |
+        cp dist/public/assets/*.css docs/styles.css
+        cp dist/public/assets/*.js docs/script.js
+        
+    - name: Commit and push to docs
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add docs/
+        git diff --staged --quiet || git commit -m "Update docs with latest build"
+        git push

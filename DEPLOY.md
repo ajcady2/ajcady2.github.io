@@ -1,6 +1,6 @@
 # GitHub Deployment Guide
 
-This guide explains how to deploy your AJ Terminal Portfolio to GitHub and make it publicly accessible.
+This guide explains how to deploy your AJ Terminal Portfolio to GitHub Pages using the docs folder structure.
 
 ## Quick Setup for GitHub
 
@@ -26,8 +26,10 @@ git push -u origin main
 1. Go to your repository on GitHub
 2. Click on **Settings** tab
 3. Scroll down to **Pages** section
-4. Under **Source**, select **GitHub Actions**
-5. The deployment workflow will automatically trigger
+4. Under **Source**, select **Deploy from a branch**
+5. Choose **main** branch and **/docs** folder
+6. Click **Save**
+7. Your site will be live at `https://yourusername.github.io/aj-terminal-portfolio`
 
 ### 3. Custom Domain (Optional)
 If you want to use a custom domain:
@@ -36,15 +38,18 @@ If you want to use a custom domain:
 
 ## File Structure for GitHub
 
-The project is now structured to be GitHub-compatible:
+The project uses the docs folder structure for easy GitHub Pages deployment:
 
 ```
-├── index.html              # Root HTML file (GitHub Pages entry)
+├── docs/                   # GitHub Pages deployment folder
+│   ├── index.html          # Main HTML file for GitHub Pages
+│   ├── styles.css          # Compiled CSS styles
+│   └── script.js           # Compiled JavaScript bundle
 ├── client/                 # Frontend source code
 │   ├── src/               # React components and logic
-│   └── index.html         # Original Vite entry point
+│   └── index.html         # Development entry point
 ├── server/                # Backend (for development)
-├── .github/               # GitHub Actions workflow
+├── .github/workflows/     # Automatic build workflow
 ├── README.md              # Project documentation
 ├── LICENSE                # MIT License
 └── package.json           # Dependencies

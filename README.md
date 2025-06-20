@@ -35,17 +35,21 @@ An interactive terminal-style portfolio website with cyberpunk neon aesthetics. 
 ## 🏗️ Project Structure
 
 ```
-├── client/                 # Frontend React application
+├── docs/                   # GitHub Pages deployment folder
+│   ├── index.html          # Main HTML file
+│   ├── styles.css          # Compiled CSS
+│   └── script.js           # Compiled JavaScript
+├── client/                 # Frontend React application source
 │   ├── src/
 │   │   ├── components/     # Terminal UI components
 │   │   ├── hooks/          # Custom React hooks
 │   │   ├── pages/          # Route pages
 │   │   ├── types/          # TypeScript definitions
 │   │   └── utils/          # Command system & utilities
-│   └── index.html          # Original HTML entry point
+│   └── index.html          # Development HTML entry point
 ├── server/                 # Backend Express server
 ├── shared/                 # Shared schemas & types
-├── index.html              # Root HTML file (GitHub compatible)
+├── .github/workflows/      # GitHub Actions for auto-deployment
 └── package.json            # Dependencies & scripts
 ```
 
@@ -99,15 +103,22 @@ newCommand: {
 
 ## 🌐 Deployment
 
-### GitHub Pages
-1. Build the project: `npm run build`
-2. Deploy the `dist/public` folder to GitHub Pages
-3. Ensure the root `index.html` points to the correct paths
+### GitHub Pages (Recommended)
+1. Push your repository to GitHub
+2. Go to repository Settings → Pages
+3. Set source to "Deploy from a branch"
+4. Select "main" branch and "/docs" folder
+5. Your site will be live at `https://yourusername.github.io/repository-name`
 
-### Vercel/Netlify
-1. Connect your GitHub repository
-2. Set build command: `npm run build`
-3. Set publish directory: `dist/public`
+### Manual Build
+```bash
+npm run build
+cp dist/public/assets/*.css docs/styles.css
+cp dist/public/assets/*.js docs/script.js
+```
+
+### Automatic Deployment
+The included GitHub Actions workflow automatically builds and updates the docs folder on every push to main.
 
 ## 🎨 Design Philosophy
 

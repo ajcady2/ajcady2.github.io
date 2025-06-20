@@ -109,6 +109,7 @@ This is a full-stack web application featuring an interactive terminal-style por
 ## Changelog
 - June 19, 2025. Initial setup
 - June 19, 2025. Made project GitHub-compatible with root index.html, deployment workflow, and proper documentation
+- June 19, 2025. Restructured for GitHub Pages deployment using docs folder with compiled assets
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.
