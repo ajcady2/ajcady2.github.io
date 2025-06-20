@@ -452,7 +452,6 @@
                                 <div><span class="text-neon-orange">projects</span> - View portfolio projects</div>
                                 <div><span class="text-neon-cyan">skills</span> - Technical expertise</div>
                                 <div><span class="text-yellow">contact</span> - Get in touch</div>
-                                <div><span class="text-purple">matrix</span> - Enter the matrix</div>
                                 <div><span class="text-red">clear</span> - Clear terminal</div>
                                 <div><span class="text-blue">whoami</span> - System information</div>
                                 <div><span class="text-neon-cyan">geomap</span> - Show your location on a world map</div>
@@ -557,10 +556,6 @@
                         description: 'Current date and time',
                         execute: () => `<div class="text-neon-cyan">${new Date().toLocaleString()}</div>`
                     },
-                    matrix: {
-                        description: 'Enter the matrix',
-                        execute: () => '<div class="text-neon-green terminal-glow">Entering the Matrix... Reality.exe has stopped working.</div>'
-                    },
                     ls: {
                         description: 'List directory contents',
                         execute: () => '<div class="text-neon-cyan">about.txt  projects.dir  skills.exe  contact.vcard  README.md</div>'
@@ -583,7 +578,7 @@
                     },
                     geomap: {
                         description: 'Show your geolocation on an ASCII map',
-                        execute: async () => {
+                        execute: async (args = []) => {
                             // Hacker sequence messages (IP will be filled in after fetch)
                             let userIP = '...';
                             const sequence = [
@@ -606,14 +601,38 @@
                             terminal.commandHistory.lastElementChild.querySelector('.command-output').innerHTML = '';
                             terminal.scrollToBottom();
 
-                            // Fetch geolocation and IP
+                            // Determine location: argument or IP
                             let data = {};
-                            try {
-                                const res = await fetch('https://ipapi.co/json/');
-                                data = await res.json();
-                                userIP = data.ip || '...';
-                            } catch (e) {
-                                userIP = '...';
+                            let lat = null, lon = null, region = '', country_name = '', locationLabel = '';
+                            if (args.length > 0) {
+                                // Geocode the argument (state/country)
+                                const query = encodeURIComponent(args.join(' '));
+                                try {
+                                    const geoRes = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${query}`);
+                                    const geoData = await geoRes.json();
+                                    if (geoData && geoData.length > 0) {
+                                        lat = parseFloat(geoData[0].lat);
+                                        lon = parseFloat(geoData[0].lon);
+                                        locationLabel = geoData[0].display_name;
+                                        region = geoData[0].display_name.split(',')[0];
+                                        country_name = geoData[0].display_name.split(',').slice(-1)[0];
+                                    }
+                                } catch (e) {}
+                            }
+                            if (lat === null || lon === null) {
+                                // Fallback to IP geolocation
+                                try {
+                                    const res = await fetch('https://ipapi.co/json/');
+                                    data = await res.json();
+                                    userIP = data.ip || '...';
+                                    lat = data.latitude;
+                                    lon = data.longitude;
+                                    region = data.region;
+                                    country_name = data.country_name;
+                                    locationLabel = `${region ? region + ', ' : ''}${country_name ? country_name : ''}`;
+                                } catch (e) {
+                                    userIP = '...';
+                                }
                             }
 
                             // Play hacker sequence
@@ -631,6 +650,24 @@
                                 await sleep(400);
                             }
 
+                            // Region-based correction for US states
+                            let xOffset = 0, yOffset = 0;
+                            if (country_name && country_name.trim() === 'United States') {
+                              if (/Connecticut|New York|Massachusetts|Rhode Island|New Jersey/i.test(region)) {
+                                xOffset = 1; yOffset = 2;
+                              } else if (/Florida|Georgia|Alabama/i.test(region)) {
+                                xOffset = -0.25; yOffset = 2.5;
+                              } else if (/California|Oregon|Washington/i.test(region)) {
+                                xOffset = -0.5; yOffset = 2.5;
+                              } else if (/Texas/i.test(region)) {
+                                xOffset = -1; yOffset = 3;
+                              } else if (/Illinois|Ohio|Michigan|Wisconsin/i.test(region)) {
+                                xOffset = -0.7; yOffset = 0.5;
+                              } else {
+                                xOffset = -2; yOffset = 2.5; // Default US
+                              }
+                            }
+
                             // Provided world Unicode map
                             const worldMap = [
 "⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣀⣄⣠⣀⡀⣀⣠⣤⣤⣤⣀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀",
@@ -642,8 +679,8 @@
 "⠀⠀⠀⠀⠀⠀⠀⠘⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣟⡿⠦⠀⠀⠀⠀⠀⠀⠀⠙⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡿⡗⠀⠀⠀⠀⠀⠀⠀⠀",
 "⠀⠀⠀⠀⠀⠀⠀⠀⢻⣿⣿⣿⣿⣿⣿⣿⣿⠋⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⢿⣿⣉⣿⡿⢿⢷⣾⣾⣿⣞⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠋⣠⠟⠀⠀⠀⠀⠀⠀⠀⠀",
 "⠀⠀⠀⠀⠀⠀⠀⠀⠀⠹⣿⣿⣿⠿⠿⣿⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣀⣾⣿⣷⣦⣶⣦⣼⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣷⠈⠛⠁⠀⠀⠀⠀⠀⠀⠀⠀",
-"⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠉⠻⣿⣤⡖⠛⠶⠤⡀⠀⠀⠀⠀⠀⠀⠀⢰⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡿⠁⠙⣿⣿⠿⢻⣿⣿⡿⠋⢩⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀",
-"⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠙⠧⣤⣦⣤⣄⡀⠀⠀⠀⠀⠀⠘⢿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡇⠀⠀⠀⠘⣧⠀⠈⣹⡻⠇⢀⣿⡆⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀",
+"⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠉⠻⣿⣤⡖⠛⠶⠤⡀⠀⠀⠀⠀⠀⠀⠀⢰⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡇⠀⠀⠘⣧⠀⠈⣹⡻⠇⢀⣿⡆⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀",
+"⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠙⠧⣤⣦⣤⣄⡀⠀⠀⠀⠀⠀⠘⢿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡇⠀⠀⠘⣧⠀⠈⣹⡻⠇⢀⣿⡆⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀",
 "⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢠⣿⣿⣿⣿⣿⣤⣀⡀⠀⠀⠀⠀⠀⠀⠈⢽⣿⣿⣿⣿⣿⠋⠀⠀⠀⠀⠀⠀⠀⠀⠹⣷⣴⣿⣷⢲⣦⣤⡀⢀⡀⠀⠀⠀⠀⠀⠀",
 "⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⢿⣿⣿⣿⣿⣿⣿⠟⠀⠀⠀⠀⠀⠀⠀⢸⣿⣿⣿⣿⣷⢀⡄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠂⠛⣆⣤⡜⣟⠋⠙⠂⠀⠀⠀⠀⠀",
 "⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢹⣿⣿⣿⣿⠟⠀⠀⠀⠀⠀⠀⠀⠀⠘⣿⣿⣿⣿⠉⣿⠃⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣤⣾⣿⣿⣿⣿⣆⠀⠰⠄⠀⠉⠀⠀",
@@ -659,10 +696,11 @@
                             const mapStartX = 0, mapEndX = worldMap[0].length - 1;
 
                             // Calculate position
-                            const latitude = data.latitude || 0;
-                            const longitude = data.longitude || 0;
-                            const y = Math.round(mapStartY + ((mapTopLat - latitude) / (mapTopLat - mapBotLat)) * (mapEndY - mapStartY)) + 2;
-                            const x = Math.round(mapStartX + ((longitude - mapLeftLon) / (mapRightLon - mapLeftLon)) * (mapEndX - mapStartX));
+                            const latitude = lat || 0;
+                            const longitude = lon || 0;
+                            const y = Math.round(mapStartY + ((mapTopLat - latitude) / (mapTopLat - mapBotLat)) * (mapEndY - mapStartY) + yOffset);
+                            let x = Math.round(mapStartX + ((longitude - mapLeftLon) / (mapRightLon - mapLeftLon)) * (mapEndX - mapStartX) + xOffset);
+                            if (longitude < -60) x = x - 2;
 
                             // Bullseye animation frames
                             const bullseyeFrames = 8;
@@ -672,7 +710,7 @@
                                 let bx = Math.round((i / (bullseyeFrames - 1)) * x);
                                 let by = Math.round((i / (bullseyeFrames - 1)) * y);
                                 if (mapArr[by] && mapArr[by][bx]) {
-                                    mapArr[by][bx] = '<span class="geomap-dot">◎</span>';
+                                    mapArr[by][bx] = '<span class="geomap-dot" style="font-size:13px;line-height:1;vertical-align:middle;">◎</span>';
                                 }
                                 const mapStr = mapArr.map(row => row.join('')).join('<br>');
                                 terminal.commandHistory.lastElementChild.querySelector('.command-output').innerHTML = outputHTML + `<div style='margin-top:10px;font-family:monospace;font-size:11px;color:var(--neon-orange);overflow-x:auto;'>${mapStr}</div>`;
@@ -683,7 +721,7 @@
                             // Place pulsing dot at final location
                             let mapArr = worldMap.map(row => row.split(''));
                             if (mapArr[y] && mapArr[y][x]) {
-                                mapArr[y][x] = '<span class="geomap-dot">●</span>';
+                                mapArr[y][x] = '<span class="geomap-dot" style="font-size:13px;line-height:1;vertical-align:middle;">⬤</span>';
                             }
                             const mapStr = mapArr.map(row => row.join('')).join('<br>');
 
@@ -691,7 +729,7 @@
                             terminal.commandHistory.lastElementChild.querySelector('.command-output').innerHTML =
                                 outputHTML +
                                 `<div style='margin-top:10px;font-family:monospace;font-size:11px;color:var(--neon-orange);overflow-x:auto;'>${mapStr}</div>` +
-                                `<div class=\"text-neon-green\" style=\"margin-top: 8px;\">${data.region ? data.region + ', ' : ''}${data.country_name ? data.country_name : ''}</div>`;
+                                `<div class=\"text-neon-green\" style=\"margin-top: 8px;\">${locationLabel}</div>`;
                             terminal.scrollToBottom();
                         }
                     }
