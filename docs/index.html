@@ -1,17 +1,701 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AJ Terminal Portfolio</title>
     <meta name="description" content="Interactive terminal-style portfolio showcasing AJ's development skills, projects, and contact information with cyberpunk neon aesthetics.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css">
-  </head>
-  <body>
-    <div id="root"></div>
-    <script src="script.js" type="module"></script>
-  </body>
+    <style>
+        /* Reset and base styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --neon-cyan: hsl(180, 100%, 50%);
+            --neon-magenta: hsl(300, 100%, 50%);
+            --neon-green: hsl(120, 100%, 50%);
+            --neon-orange: hsl(30, 100%, 50%);
+            --terminal-bg: hsl(240, 50%, 3%);
+            --terminal-dark: hsl(0, 0%, 0%);
+        }
+
+        body {
+            font-family: 'JetBrains Mono', 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Code', 'Droid Sans Mono', monospace;
+            background-color: var(--terminal-bg);
+            color: var(--neon-cyan);
+            overflow: hidden;
+            margin: 0;
+            padding: 0;
+        }
+
+        .terminal-container {
+            min-height: 100vh;
+            position: relative;
+        }
+
+        /* Scanlines effect */
+        .scanlines::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: repeating-linear-gradient(
+                0deg,
+                transparent,
+                transparent 2px,
+                rgba(0, 255, 255, 0.03) 2px,
+                rgba(0, 255, 255, 0.03) 4px
+            );
+            pointer-events: none;
+        }
+
+        /* Terminal header */
+        .terminal-header {
+            background-color: var(--terminal-dark);
+            border-bottom: 1px solid rgba(0, 255, 255, 0.3);
+            padding: 8px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .window-controls {
+            display: flex;
+            gap: 8px;
+        }
+
+        .control-button {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            filter: drop-shadow(0 0 3px currentColor);
+        }
+
+        .control-red { background-color: #ff5f56; }
+        .control-yellow { background-color: #ffbd2e; }
+        .control-green { background-color: #27ca3f; }
+
+        .terminal-title {
+            color: var(--neon-cyan);
+            font-size: 14px;
+            text-shadow: 0 0 5px currentColor;
+        }
+
+        .terminal-time {
+            color: #888;
+            font-size: 12px;
+        }
+
+        /* Main terminal content */
+        .terminal-content {
+            min-height: calc(100vh - 60px);
+            display: flex;
+            flex-direction: column;
+            padding: 16px;
+        }
+
+        /* ASCII Art */
+        .ascii-art {
+            color: var(--neon-orange);
+            text-align: center;
+            margin-bottom: 24px;
+            text-shadow: 0 0 10px currentColor;
+            animation: glow-pulse 2s ease-in-out infinite alternate;
+        }
+
+        .ascii-art pre {
+            font-size: clamp(8px, 2vw, 18px);
+            font-weight: bold;
+            line-height: 1.1;
+        }
+
+        /* Boot sequence */
+        .boot-sequence {
+            margin-bottom: 24px;
+        }
+
+        .boot-message {
+            font-size: 14px;
+            margin-bottom: 8px;
+            opacity: 0;
+            animation: fadeIn 0.5s ease-in forwards;
+        }
+
+        .boot-message.first {
+            color: var(--neon-green);
+            animation: typing 2s steps(30) forwards, fadeIn 0.5s ease-in forwards;
+        }
+
+        .boot-message.last {
+            color: var(--neon-cyan);
+            text-shadow: 0 0 10px currentColor;
+        }
+
+        .boot-message.middle {
+            color: #888;
+        }
+
+        /* Terminal output */
+        .terminal-output {
+            flex: 1;
+            overflow-y: auto;
+            max-height: 60vh;
+            margin-bottom: 16px;
+        }
+
+        .welcome-box {
+            border: 1px solid var(--neon-magenta);
+            padding: 16px;
+            margin-bottom: 24px;
+            color: var(--neon-magenta);
+            text-shadow: 0 0 5px currentColor;
+        }
+
+        .command-history {
+            margin-bottom: 16px;
+        }
+
+        .command-entry {
+            margin-bottom: 16px;
+        }
+
+        .command-prompt {
+            color: var(--neon-green);
+            text-shadow: 0 0 5px currentColor;
+        }
+
+        .command-output {
+            margin-left: 16px;
+            margin-top: 8px;
+        }
+
+        /* Terminal input */
+        .terminal-input-container {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+        }
+
+        .input-prompt {
+            color: var(--neon-green);
+            text-shadow: 0 0 5px currentColor;
+            flex-shrink: 0;
+        }
+
+        .terminal-input {
+            background: transparent;
+            border: none;
+            outline: none;
+            color: var(--neon-cyan);
+            font-family: inherit;
+            font-size: inherit;
+            flex: 1;
+            caret-color: var(--neon-cyan);
+        }
+
+        .cursor {
+            color: var(--neon-cyan);
+            animation: blink 1s infinite;
+        }
+
+        /* Command suggestions */
+        .suggestions {
+            margin-top: 8px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .suggestion {
+            background: rgba(0, 255, 255, 0.1);
+            border: 1px solid rgba(0, 255, 255, 0.3);
+            padding: 4px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.2s ease;
+            opacity: 0.6;
+        }
+
+        .suggestion:hover {
+            background: rgba(0, 255, 255, 0.2);
+            opacity: 1;
+        }
+
+        /* Animations */
+        @keyframes glow-pulse {
+            0% { 
+                text-shadow: 0 0 5px currentColor, 0 0 10px currentColor, 0 0 15px currentColor;
+                transform: scale(1);
+            }
+            100% { 
+                text-shadow: 0 0 10px currentColor, 0 0 20px currentColor, 0 0 30px currentColor;
+                transform: scale(1.02);
+            }
+        }
+
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0; }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes typing {
+            from { width: 0; }
+            to { width: 100%; }
+        }
+
+        /* Responsive design */
+        @media (max-width: 768px) {
+            .terminal-content {
+                padding: 12px;
+            }
+            
+            .ascii-art pre {
+                font-size: 10px;
+            }
+            
+            .terminal-input-container {
+                font-size: 12px;
+            }
+        }
+
+        /* Utility colors */
+        .text-neon-cyan { color: var(--neon-cyan); }
+        .text-neon-magenta { color: var(--neon-magenta); }
+        .text-neon-green { color: var(--neon-green); }
+        .text-neon-orange { color: var(--neon-orange); }
+        .text-red { color: #ff6b6b; }
+        .text-yellow { color: #ffd93d; }
+        .text-purple { color: #8b5cf6; }
+        .text-blue { color: #60a5fa; }
+        .text-gray { color: #888; }
+        .text-white { color: #fff; }
+
+        .terminal-glow {
+            text-shadow: 0 0 5px currentColor, 0 0 10px currentColor, 0 0 15px currentColor;
+        }
+
+        /* Scrollbar styling */
+        .terminal-output::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .terminal-output::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.3);
+        }
+
+        .terminal-output::-webkit-scrollbar-thumb {
+            background: rgba(0, 255, 255, 0.5);
+            border-radius: 4px;
+        }
+
+        .terminal-output::-webkit-scrollbar-thumb:hover {
+            background: rgba(0, 255, 255, 0.8);
+        }
+    </style>
+</head>
+<body>
+    <div class="terminal-container scanlines">
+        <!-- Terminal Header -->
+        <div class="terminal-header">
+            <div class="window-controls">
+                <div class="control-button control-red"></div>
+                <div class="control-button control-yellow"></div>
+                <div class="control-button control-green"></div>
+            </div>
+            <div class="terminal-title">AJ@portfolio:~</div>
+            <div class="terminal-time" id="clock">00:00:00</div>
+        </div>
+
+        <!-- Main Terminal Content -->
+        <div class="terminal-content">
+            <!-- ASCII Art -->
+            <div class="ascii-art">
+                <pre>   █████╗         ██╗
+  ██╔══██╗        ██║
+  ███████║        ██║
+  ██╔══██║   ██   ██║
+  ██║  ██║   ╚█████╔╝
+  ╚═╝  ╚═╝    ╚════╝ </pre>
+            </div>
+
+            <!-- Boot Sequence -->
+            <div class="boot-sequence" id="bootSequence" style="display: none;">
+                <!-- Boot messages will be inserted here -->
+            </div>
+
+            <!-- Terminal Output -->
+            <div class="terminal-output" id="terminalOutput">
+                <div class="welcome-box">
+                    <div>╔══════════════════════════════════════════════════════════════╗</div>
+                    <div>║  CYBERNETIC PORTFOLIO SYSTEM - READY FOR INPUT              ║</div>
+                    <div>║  Type 'help' to view available commands                     ║</div>
+                    <div>╚══════════════════════════════════════════════════════════════╝</div>
+                </div>
+                <div id="commandHistory"></div>
+            </div>
+
+            <!-- Terminal Input -->
+            <div class="terminal-input-container">
+                <span class="input-prompt">guest@aj-portfolio:~$</span>
+                <input type="text" class="terminal-input" id="terminalInput" placeholder="Enter command..." autocomplete="off" spellcheck="false">
+                <span class="cursor">|</span>
+            </div>
+
+            <!-- Command Suggestions -->
+            <div class="suggestions" id="suggestions" style="display: none;"></div>
+        </div>
+    </div>
+
+    <script>
+        // Terminal functionality
+        class Terminal {
+            constructor() {
+                this.input = document.getElementById('terminalInput');
+                this.output = document.getElementById('terminalOutput');
+                this.commandHistory = document.getElementById('commandHistory');
+                this.suggestions = document.getElementById('suggestions');
+                this.bootSequence = document.getElementById('bootSequence');
+                
+                this.history = [];
+                this.historyIndex = -1;
+                this.isBooting = true;
+                
+                this.commands = {
+                    help: {
+                        description: 'Show available commands',
+                        execute: () => `
+                            <div class="text-neon-cyan terminal-glow" style="margin-bottom: 8px;">AVAILABLE COMMANDS:</div>
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 8px; margin-left: 16px; font-size: 13px;">
+                                <div><span class="text-neon-green">help</span> - Show this help menu</div>
+                                <div><span class="text-neon-magenta">about</span> - Learn about AJ</div>
+                                <div><span class="text-neon-orange">projects</span> - View portfolio projects</div>
+                                <div><span class="text-neon-cyan">skills</span> - Technical expertise</div>
+                                <div><span class="text-yellow">contact</span> - Get in touch</div>
+                                <div><span class="text-purple">matrix</span> - Enter the matrix</div>
+                                <div><span class="text-red">clear</span> - Clear terminal</div>
+                                <div><span class="text-blue">whoami</span> - System information</div>
+                            </div>
+                        `
+                    },
+                    about: {
+                        description: 'Learn about AJ',
+                        execute: () => `
+                            <div class="text-neon-magenta terminal-glow" style="margin-bottom: 8px;">ABOUT AJ:</div>
+                            <div style="margin-left: 16px; font-size: 13px;">
+                                <div style="margin-bottom: 4px;">Full-Stack Developer & Digital Artist</div>
+                                <div style="margin-bottom: 4px;">Location: Cyberspace, Matrix Level 7</div>
+                                <div style="margin-bottom: 4px;">Specializing in: React, Node.js, Python, AI/ML</div>
+                                <div style="margin-bottom: 4px;">Mission: Creating immersive digital experiences</div>
+                                <div class="text-neon-green terminal-glow">Status: Online and ready to innovate</div>
+                            </div>
+                        `
+                    },
+                    projects: {
+                        description: 'View portfolio projects',
+                        execute: () => `
+                            <div class="text-neon-orange terminal-glow" style="margin-bottom: 8px;">FEATURED PROJECTS:</div>
+                            <div style="margin-left: 16px; font-size: 13px;">
+                                <div style="border-left: 2px solid var(--neon-cyan); padding-left: 12px; margin-bottom: 12px;">
+                                    <div class="text-neon-cyan" style="font-weight: bold;">NeuroLink Dashboard</div>
+                                    <div>Real-time neural network monitoring system</div>
+                                    <div class="text-gray">Tech: React, D3.js, WebGL</div>
+                                </div>
+                                <div style="border-left: 2px solid var(--neon-magenta); padding-left: 12px; margin-bottom: 12px;">
+                                    <div class="text-neon-magenta" style="font-weight: bold;">Quantum Chat</div>
+                                    <div>Encrypted messaging app with quantum security</div>
+                                    <div class="text-gray">Tech: Node.js, WebRTC, Cryptography</div>
+                                </div>
+                                <div style="border-left: 2px solid var(--neon-green); padding-left: 12px;">
+                                    <div class="text-neon-green" style="font-weight: bold;">AI Art Generator</div>
+                                    <div>Creative AI tool for digital art creation</div>
+                                    <div class="text-gray">Tech: Python, TensorFlow, DALL-E API</div>
+                                </div>
+                            </div>
+                        `
+                    },
+                    skills: {
+                        description: 'Technical expertise',
+                        execute: () => `
+                            <div class="text-neon-cyan terminal-glow" style="margin-bottom: 8px;">TECHNICAL MATRIX:</div>
+                            <div style="margin-left: 16px; font-size: 13px;">
+                                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+                                    <span class="text-neon-green">●●●●●</span>
+                                    <span>JavaScript/TypeScript</span>
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+                                    <span class="text-neon-green">●●●●●</span>
+                                    <span>React/Next.js</span>
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+                                    <span class="text-neon-green">●●●●○</span>
+                                    <span>Node.js/Express</span>
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+                                    <span class="text-neon-green">●●●●○</span>
+                                    <span>Python/Django</span>
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 8px;">
+                                    <span class="text-neon-green">●●●○○</span>
+                                    <span>Machine Learning</span>
+                                </div>
+                            </div>
+                        `
+                    },
+                    contact: {
+                        description: 'Get in touch',
+                        execute: () => `
+                            <div class="text-neon-magenta terminal-glow" style="margin-bottom: 8px;">ESTABLISH CONNECTION:</div>
+                            <div style="margin-left: 16px; font-size: 13px;">
+                                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+                                    <span class="text-neon-cyan">📧</span>
+                                    <span>aj@cybernetic-portfolio.dev</span>
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+                                    <span class="text-neon-green">🔗</span>
+                                    <span>linkedin.com/in/aj-developer</span>
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+                                    <span class="text-neon-orange">🐙</span>
+                                    <span>github.com/aj-coder</span>
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 8px;">
+                                    <span class="text-purple">🐦</span>
+                                    <span>@aj_codes_things</span>
+                                </div>
+                            </div>
+                        `
+                    },
+                    whoami: {
+                        description: 'System information',
+                        execute: () => '<div class="text-neon-green">User: guest | System: Portfolio OS | Access Level: Visitor</div>'
+                    },
+                    date: {
+                        description: 'Current date and time',
+                        execute: () => `<div class="text-neon-cyan">${new Date().toLocaleString()}</div>`
+                    },
+                    matrix: {
+                        description: 'Enter the matrix',
+                        execute: () => '<div class="text-neon-green terminal-glow">Entering the Matrix... Reality.exe has stopped working.</div>'
+                    },
+                    ls: {
+                        description: 'List directory contents',
+                        execute: () => '<div class="text-neon-cyan">about.txt  projects.dir  skills.exe  contact.vcard  README.md</div>'
+                    },
+                    pwd: {
+                        description: 'Print working directory',
+                        execute: () => '<div class="text-neon-green">/home/aj/portfolio</div>'
+                    },
+                    echo: {
+                        description: 'Display text',
+                        execute: (args) => `<div class="text-white">${args.join(' ')}</div>`
+                    },
+                    sudo: {
+                        description: 'Execute as superuser',
+                        execute: () => '<div class="text-red">Nice try! But this is a portfolio, not a server 😉</div>'
+                    },
+                    clear: {
+                        description: 'Clear terminal',
+                        execute: () => '__CLEAR__'
+                    }
+                };
+                
+                this.init();
+            }
+            
+            init() {
+                this.updateClock();
+                setInterval(() => this.updateClock(), 1000);
+                
+                this.input.addEventListener('keydown', (e) => this.handleKeyDown(e));
+                this.input.addEventListener('input', () => this.handleInput());
+                
+                // Auto-focus input
+                this.input.focus();
+                document.addEventListener('click', () => this.input.focus());
+                
+                this.startBootSequence();
+            }
+            
+            updateClock() {
+                document.getElementById('clock').textContent = new Date().toLocaleTimeString();
+            }
+            
+            startBootSequence() {
+                const messages = [
+                    'PORTFOLIO OS v2.4.1 BOOTING...',
+                    'Loading neural networks... [OK]',
+                    'Initializing holographic interface... [OK]',
+                    'Connecting to the matrix... [OK]',
+                    'Welcome to AJ\'s Digital Realm!'
+                ];
+                
+                this.bootSequence.style.display = 'block';
+                this.input.disabled = true;
+                
+                messages.forEach((message, index) => {
+                    setTimeout(() => {
+                        const div = document.createElement('div');
+                        div.className = `boot-message ${index === 0 ? 'first' : index === messages.length - 1 ? 'last' : 'middle'}`;
+                        div.textContent = message;
+                        div.style.animationDelay = `${index * 0.1}s`;
+                        this.bootSequence.appendChild(div);
+                        
+                        if (index === messages.length - 1) {
+                            setTimeout(() => {
+                                this.bootSequence.style.display = 'none';
+                                this.isBooting = false;
+                                this.input.disabled = false;
+                                this.input.focus();
+                            }, 1000);
+                        }
+                    }, index * 500);
+                });
+            }
+            
+            handleKeyDown(e) {
+                if (this.isBooting) return;
+                
+                switch (e.key) {
+                    case 'Enter':
+                        e.preventDefault();
+                        this.executeCommand();
+                        break;
+                    case 'ArrowUp':
+                        e.preventDefault();
+                        this.navigateHistory('up');
+                        break;
+                    case 'ArrowDown':
+                        e.preventDefault();
+                        this.navigateHistory('down');
+                        break;
+                    case 'Tab':
+                        e.preventDefault();
+                        this.showSuggestions();
+                        break;
+                    case 'Escape':
+                        this.hideSuggestions();
+                        break;
+                }
+            }
+            
+            handleInput() {
+                const value = this.input.value;
+                if (value.length > 0) {
+                    this.showSuggestions();
+                } else {
+                    this.hideSuggestions();
+                }
+            }
+            
+            executeCommand() {
+                const commandLine = this.input.value.trim();
+                if (!commandLine) return;
+                
+                this.addToHistory(commandLine);
+                this.hideSuggestions();
+                
+                const [cmdName, ...args] = commandLine.split(' ');
+                const command = this.commands[cmdName.toLowerCase()];
+                
+                let output;
+                if (command) {
+                    output = command.execute(args);
+                    if (output === '__CLEAR__') {
+                        this.commandHistory.innerHTML = '';
+                        this.input.value = '';
+                        return;
+                    }
+                } else {
+                    output = `<div class="text-red">Command not found: ${cmdName}. Type 'help' for available commands.</div>`;
+                }
+                
+                this.displayCommand(commandLine, output);
+                this.input.value = '';
+                this.scrollToBottom();
+            }
+            
+            addToHistory(command) {
+                this.history.push(command);
+                this.historyIndex = this.history.length;
+            }
+            
+            navigateHistory(direction) {
+                if (direction === 'up' && this.historyIndex > 0) {
+                    this.historyIndex--;
+                    this.input.value = this.history[this.historyIndex];
+                } else if (direction === 'down' && this.historyIndex < this.history.length - 1) {
+                    this.historyIndex++;
+                    this.input.value = this.history[this.historyIndex];
+                } else if (direction === 'down') {
+                    this.historyIndex = this.history.length;
+                    this.input.value = '';
+                }
+            }
+            
+            displayCommand(command, output) {
+                const entry = document.createElement('div');
+                entry.className = 'command-entry';
+                entry.innerHTML = `
+                    <div style="display: flex; font-size: 14px;">
+                        <span class="command-prompt">guest@aj-portfolio:~$</span>
+                        <span class="text-white" style="margin-left: 8px;">${command}</span>
+                    </div>
+                    ${output ? `<div class="command-output">${output}</div>` : ''}
+                `;
+                this.commandHistory.appendChild(entry);
+            }
+            
+            showSuggestions() {
+                const input = this.input.value.toLowerCase();
+                const matchingCommands = Object.keys(this.commands).filter(cmd => 
+                    cmd.startsWith(input)
+                );
+                
+                if (matchingCommands.length > 0) {
+                    this.suggestions.innerHTML = matchingCommands.map(cmd => 
+                        `<div class="suggestion" onclick="terminal.selectSuggestion('${cmd}')">${cmd}</div>`
+                    ).join('');
+                    this.suggestions.style.display = 'flex';
+                } else {
+                    this.hideSuggestions();
+                }
+            }
+            
+            hideSuggestions() {
+                this.suggestions.style.display = 'none';
+            }
+            
+            selectSuggestion(command) {
+                this.input.value = command;
+                this.hideSuggestions();
+                this.input.focus();
+            }
+            
+            scrollToBottom() {
+                this.output.scrollTop = this.output.scrollHeight;
+            }
+        }
+        
+        // Initialize terminal when page loads
+        let terminal;
+        document.addEventListener('DOMContentLoaded', () => {
+            terminal = new Terminal();
+        });
+    </script>
+</body>
 </html>

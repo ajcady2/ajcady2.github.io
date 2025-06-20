@@ -36,9 +36,7 @@ An interactive terminal-style portfolio website with cyberpunk neon aesthetics. 
 
 ```
 ├── docs/                   # GitHub Pages deployment folder
-│   ├── index.html          # Main HTML file
-│   ├── styles.css          # Compiled CSS
-│   └── script.js           # Compiled JavaScript
+│   └── index.html          # Complete standalone terminal portfolio
 ├── client/                 # Frontend React application source
 │   ├── src/
 │   │   ├── components/     # Terminal UI components
@@ -110,15 +108,11 @@ newCommand: {
 4. Select "main" branch and "/docs" folder
 5. Your site will be live at `https://yourusername.github.io/repository-name`
 
-### Manual Build
-```bash
-npm run build
-cp dist/public/assets/*.css docs/styles.css
-cp dist/public/assets/*.js docs/script.js
-```
+### Manual Deployment
+The `docs/index.html` file is a complete standalone terminal portfolio that works directly on GitHub Pages without any build process required.
 
-### Automatic Deployment
-The included GitHub Actions workflow automatically builds and updates the docs folder on every push to main.
+### Automatic Updates
+If you modify the React source code, you can rebuild and update the docs folder using the included GitHub Actions workflow.
 
 ## 🎨 Design Philosophy
 

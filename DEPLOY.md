@@ -42,9 +42,7 @@ The project uses the docs folder structure for easy GitHub Pages deployment:
 
 ```
 ├── docs/                   # GitHub Pages deployment folder
-│   ├── index.html          # Main HTML file for GitHub Pages
-│   ├── styles.css          # Compiled CSS styles
-│   └── script.js           # Compiled JavaScript bundle
+│   └── index.html          # Complete standalone terminal portfolio
 ├── client/                 # Frontend source code
 │   ├── src/               # React components and logic
 │   └── index.html         # Development entry point
