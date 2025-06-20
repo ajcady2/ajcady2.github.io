@@ -309,6 +309,17 @@
         .terminal-output::-webkit-scrollbar-thumb:hover {
             background: rgba(0, 255, 255, 0.8);
         }
+
+        /* Pulsing dot for geomap */
+        .geomap-dot {
+            color: #ff3333;
+            font-weight: bold;
+            animation: geomap-pulse 1s infinite alternate;
+        }
+        @keyframes geomap-pulse {
+            0% { text-shadow: 0 0 2px #ff3333, 0 0 6px #ff3333; }
+            100% { text-shadow: 0 0 8px #ff3333, 0 0 16px #ff3333; }
+        }
     </style>
 </head>
 <body>
@@ -394,6 +405,7 @@
                                 <div><span class="text-purple">matrix</span> - Enter the matrix</div>
                                 <div><span class="text-red">clear</span> - Clear terminal</div>
                                 <div><span class="text-blue">whoami</span> - System information</div>
+                                <div><span class="text-neon-cyan">geomap</span> - Show your location on a world map</div>
                             </div>
                         `
                     },
@@ -516,6 +528,120 @@
                     clear: {
                         description: 'Clear terminal',
                         execute: () => '__CLEAR__'
+                    },
+                    geomap: {
+                        description: 'Show your geolocation on an ASCII map',
+                        execute: async () => {
+                            // Hacker sequence messages (IP will be filled in after fetch)
+                            let userIP = '...';
+                            const sequence = [
+                                '[+] Initiating global trace...',
+                                '[+] Connecting to satellite relay nodes...',
+                                '[+] Spoofing identity... OK',
+                                '[+] Encrypting payload... ✓',
+                                '[+] Triangulating signal...',
+                                '[+] Scanning IP range: {IP_RANGE}',
+                                '[+] Tracing geographic coordinates...',
+                                '[+] Target location locked.'
+                            ];
+
+                            // Helper to sleep
+                            const sleep = ms => new Promise(res => setTimeout(res, ms));
+
+                            // Clear and prepare output
+                            terminal.displayCommand('geomap', '<span class="text-neon-cyan">Initializing geomap...</span>');
+                            await sleep(400);
+                            terminal.commandHistory.lastElementChild.querySelector('.command-output').innerHTML = '';
+                            terminal.scrollToBottom();
+
+                            // Fetch geolocation and IP
+                            let data = {};
+                            try {
+                                const res = await fetch('https://ipapi.co/json/');
+                                data = await res.json();
+                                userIP = data.ip || '...';
+                            } catch (e) {
+                                userIP = '...';
+                            }
+
+                            // Play hacker sequence
+                            let outputHTML = '';
+                            for (let i = 0; i < sequence.length; ++i) {
+                                let msg = sequence[i];
+                                if (msg.includes('{IP_RANGE}')) {
+                                    // Use user's IP for the scan
+                                    const ipRange = userIP.split('.').slice(0, 1).join('.') + '.0.0.0/8';
+                                    msg = msg.replace('{IP_RANGE}', ipRange);
+                                }
+                                outputHTML += `<div class='text-neon-cyan' style='font-family:monospace;'>${msg}</div>`;
+                                terminal.commandHistory.lastElementChild.querySelector('.command-output').innerHTML = outputHTML;
+                                terminal.scrollToBottom();
+                                await sleep(400);
+                            }
+
+                            // Provided world Unicode map
+                            const worldMap = [
+"⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣀⣄⣠⣀⡀⣀⣠⣤⣤⣤⣀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀",
+"⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣄⢠⣠⣼⣿⣿⣿⣟⣿⣿⣿⣿⣿⣿⣿⣿⡿⠋⠀⠀⠀⢠⣤⣦⡄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠰⢦⣄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀",
+"⠀⠀⠀⠀⠀⠀⠀⠀⣼⣿⣟⣾⣿⣽⣿⣿⣅⠈⠉⠻⣿⣿⣿⣿⣿⡿⠇⠀⠀⠀⠀⠀⠉⠀⠀⠀⠀⠀⢀⡶⠒⢉⡀⢠⣤⣶⣶⣿⣷⣆⣀⡀⠀⢲⣖⠒⠀⠀⠀⠀⠀⠀⠀",
+"⢀⣤⣾⣶⣦⣤⣤⣶⣿⣿⣿⣿⣿⣿⣽⡿⠻⣷⣀⠀⢻⣿⣿⣿⡿⠟⠀⠀⠀⠀⠀⠀⣤⣶⣶⣤⣀⣀⣬⣷⣦⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣶⣦⣤⣦⣼⣀⠀",
+"⠈⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡿⠛⠓⣿⣿⠟⠁⠘⣿⡟⠁⠀⠘⠛⠁⠀⠀⢠⣾⣿⢿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡉⠉⢱⡿⠀⠀⠀⠀⠀",
+"⠀⠸⠟⠋⠀⠈⠙⣿⣿⣿⣿⣿⣿⣷⣦⡄⣿⣿⣿⣆⠀⠀⠀⠀⠀⠀⠀⠀⣼⣆⢘⣿⣯⣼⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡗⠀⠈⠀⠀⠀⠀⠀⠀",
+"⠀⠀⠀⠀⠀⠀⠀⠘⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣟⡿⠦⠀⠀⠀⠀⠀⠀⠀⠙⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡿⡗⠀⠀⠀⠀⠀⠀⠀⠀",
+"⠀⠀⠀⠀⠀⠀⠀⠀⢻⣿⣿⣿⣿⣿⣿⣿⣿⠋⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⢿⣿⣉⣿⡿⢿⢷⣾⣾⣿⣞⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠋⣠⠟⠀⠀⠀⠀⠀⠀⠀⠀",
+"⠀⠀⠀⠀⠀⠀⠀⠀⠀⠹⣿⣿⣿⠿⠿⣿⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣀⣾⣿⣷⣦⣶⣦⣼⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣷⠈⠛⠁⠀⠀⠀⠀⠀⠀⠀⠀",
+"⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠉⠻⣿⣤⡖⠛⠶⠤⡀⠀⠀⠀⠀⠀⠀⠀⢰⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡿⠁⠙⣿⣿⠿⢻⣿⣿⡿⠋⢩⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀",
+"⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠙⠧⣤⣦⣤⣄⡀⠀⠀⠀⠀⠀⠘⢿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡇⠀⠀⠀⠘⣧⠀⠈⣹⡻⠇⢀⣿⡆⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀",
+"⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢠⣿⣿⣿⣿⣿⣤⣀⡀⠀⠀⠀⠀⠀⠀⠈⢽⣿⣿⣿⣿⣿⠋⠀⠀⠀⠀⠀⠀⠀⠀⠹⣷⣴⣿⣷⢲⣦⣤⡀⢀⡀⠀⠀⠀⠀⠀⠀",
+"⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⢿⣿⣿⣿⣿⣿⣿⠟⠀⠀⠀⠀⠀⠀⠀⢸⣿⣿⣿⣿⣷⢀⡄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠂⠛⣆⣤⡜⣟⠋⠙⠂⠀⠀⠀⠀⠀",
+"⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢹⣿⣿⣿⣿⠟⠀⠀⠀⠀⠀⠀⠀⠀⠘⣿⣿⣿⣿⠉⣿⠃⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣤⣾⣿⣿⣿⣿⣆⠀⠰⠄⠀⠉⠀⠀",
+"⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣸⣿⣿⡿⠃⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢹⣿⡿⠃⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢻⣿⠿⠿⣿⣿⣿⠇⠀⠀⢀⠀⠀⠀",
+"⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣿⡿⠛⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⢻⡇⠀⠀⢀⣼⠗⠀⠀",
+"⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸⣿⠃⣀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀"
+                            ];
+
+                            // Map bounds for the new map
+                            const mapTopLat = 90, mapBotLat = -90;
+                            const mapLeftLon = -180, mapRightLon = 180;
+                            const mapStartY = 0, mapEndY = worldMap.length - 1;
+                            const mapStartX = 0, mapEndX = worldMap[0].length - 1;
+
+                            // Calculate position
+                            const latitude = data.latitude || 0;
+                            const longitude = data.longitude || 0;
+                            const y = Math.round(mapStartY + ((mapTopLat - latitude) / (mapTopLat - mapBotLat)) * (mapEndY - mapStartY)) + 2;
+                            const x = Math.round(mapStartX + ((longitude - mapLeftLon) / (mapRightLon - mapLeftLon)) * (mapEndX - mapStartX));
+
+                            // Bullseye animation frames
+                            const bullseyeFrames = 8;
+                            for (let i = 0; i < bullseyeFrames; ++i) {
+                                let mapArr = worldMap.map(row => row.split(''));
+                                // Animate bullseye moving from left to user location
+                                let bx = Math.round((i / (bullseyeFrames - 1)) * x);
+                                let by = Math.round((i / (bullseyeFrames - 1)) * y);
+                                if (mapArr[by] && mapArr[by][bx]) {
+                                    mapArr[by][bx] = '<span class="geomap-dot">◎</span>';
+                                }
+                                const mapStr = mapArr.map(row => row.join('')).join('<br>');
+                                terminal.commandHistory.lastElementChild.querySelector('.command-output').innerHTML = outputHTML + `<div style='margin-top:10px;font-family:monospace;font-size:11px;color:var(--neon-orange);overflow-x:auto;'>${mapStr}</div>`;
+                                terminal.scrollToBottom();
+                                await sleep(120);
+                            }
+
+                            // Place pulsing dot at final location
+                            let mapArr = worldMap.map(row => row.split(''));
+                            if (mapArr[y] && mapArr[y][x]) {
+                                mapArr[y][x] = '<span class="geomap-dot">●</span>';
+                            }
+                            const mapStr = mapArr.map(row => row.join('')).join('<br>');
+
+                            // Output region/country
+                            terminal.commandHistory.lastElementChild.querySelector('.command-output').innerHTML =
+                                outputHTML +
+                                `<div style='margin-top:10px;font-family:monospace;font-size:11px;color:var(--neon-orange);overflow-x:auto;'>${mapStr}</div>` +
+                                `<div class=\"text-neon-green\" style=\"margin-top: 8px;\">${data.region ? data.region + ', ' : ''}${data.country_name ? data.country_name : ''}</div>`;
+                            terminal.scrollToBottom();
+                        }
                     }
                 };
                 
@@ -620,15 +746,29 @@
                 let output;
                 if (command) {
                     output = command.execute(args);
-                    if (output === '__CLEAR__') {
-                        this.commandHistory.innerHTML = '';
+                    if (output instanceof Promise) {
+                        output.then(result => {
+                            if (result === '__CLEAR__') {
+                                this.commandHistory.innerHTML = '';
+                                this.input.value = '';
+                                return;
+                            }
+                            this.displayCommand(commandLine, result);
+                            this.input.value = '';
+                            this.scrollToBottom();
+                        });
                         this.input.value = '';
                         return;
+                    } else {
+                        if (output === '__CLEAR__') {
+                            this.commandHistory.innerHTML = '';
+                            this.input.value = '';
+                            return;
+                        }
                     }
                 } else {
                     output = `<div class="text-red">Command not found: ${cmdName}. Type 'help' for available commands.</div>`;
                 }
-                
                 this.displayCommand(commandLine, output);
                 this.input.value = '';
                 this.scrollToBottom();
